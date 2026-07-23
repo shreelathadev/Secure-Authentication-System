@@ -9,7 +9,7 @@ All endpoints were manually tested via Swagger UI (`/docs`) and, for OAuth, dire
 ![Register request](screenshots/register-user.png)
 
 ## 3. Email OTP (dev console output)
-![OTP printed in terminal](screenshots/unicorn-log-full-flow.png)
+![OTP printed in terminal](screenshots/uvicorn-log-full-flow.png)
 
 ## 4. Login — JWT Access & Refresh Tokens
 ![Login response](screenshots/login-response-body.png)
