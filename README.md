@@ -146,10 +146,12 @@ http://127.0.0.1:8000/api/v1/oauth/github/login
 - CORS is restricted to configured trusted origins via `CORS_ORIGINS`
 
 ## Testing
-A pytest suite is included in `tests/test_auth.py` covering registration and login-before-verification behavior:
-```bash
-pytest
-```
+A pytest suite is included in `tests/test_auth.py` covering registration and login-before-verification behavior. (Not yet run in this environment — bonus scope.)
+
+## Bonus Features Status
+- Rate limiting: not implemented
+- Automated test suite: written, not executed
+- Docker: Dockerfile written, not built/tested
 
 ## Status
 All core and advanced features from the assessment brief are implemented and manually verified end-to-end, including both Google and GitHub OAuth flows against live provider sign-in.
