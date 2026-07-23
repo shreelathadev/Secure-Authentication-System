@@ -26,7 +26,7 @@ Proof that a refresh token is rejected after logout (`401 Unauthorized`):
 ![GitHub OAuth App settings](screenshots/Git-oauth-settings.png)
 
 ## 8. GitHub OAuth — Successful Login (Tokens Issued)
-![GitHub OAuth callback returning tokens](screenshots/Github_oauth_Login_tokens.png)
+![GitHub OAuth callback returning tokens](screenshots/Github_OAuth_Login_tokens.png)
 
 ## 9. Google OAuth — Consent Screen
 ![Google sign-in consent](screenshots/Google-OAuth_signIn-consent.png)
