@@ -83,3 +83,6 @@ python -m pytest
 
 ## Status
 All core and advanced features from the assessment brief are implemented and manually verified end-to-end, including live Google and GitHub OAuth sign-in.
+
+## Testing Screenshots
+See [SCREENSHOTS.md](./SCREENSHOTS.md) for a full visual walkthrough of every tested flow — registration, JWT login, protected routes, refresh rotation, logout revocation, password reset, OTP login, and both Google and GitHub OAuth sign-in.
