@@ -1,157 +1,85 @@
 # Moh Secure Auth — Python Developer Internship Assessment
 
-A production-style Authentication System built with **FastAPI**, covering registration, JWT-based login with refresh token rotation, protected routes, secure logout, email OTP verification, password reset, passwordless OTP login, and social sign-in via Google and GitHub.
+A FastAPI-based Authentication System with JWT login, refresh token rotation, protected routes, secure logout, email OTP verification, password reset, passwordless OTP login, and Google/GitHub social sign-in.
 
 ## Tech Stack
-- **FastAPI** — API framework
-- **SQLAlchemy** — ORM / database models
-- **Pydantic v2 + pydantic-settings** — request/response validation and `.env` config
-- **python-jose** — JWT encoding/decoding
-- **passlib[bcrypt]** — password hashing
-- **httpx** — OAuth token exchange with Google/GitHub
-- **SQLite** — database (swap `DATABASE_URL` for Postgres/MySQL in production)
+FastAPI, SQLAlchemy, Pydantic v2 + pydantic-settings, python-jose (JWT), passlib[bcrypt], httpx (OAuth), SQLite.
 
 ## Project Structure
 ```
 app/
 ├── api/v1/        # Route handlers (auth, users, oauth)
-├── auth/          # JWT dependency injection (get_current_user)
+├── auth/          # JWT dependency (get_current_user)
 ├── models/        # SQLAlchemy models (User, RefreshToken, OTP)
 ├── schemas/       # Pydantic request/response schemas
-├── services/      # Email sending, OTP generation, OAuth provider calls
-├── database/      # Engine, session, Base
+├── services/      # Email sending, OTP generation, OAuth calls
+├── database/      # DB engine, session
 ├── core/          # Settings (.env) and security (hashing, JWT)
-└── main.py        # App entrypoint, router registration, CORS
+└── main.py
 ```
 
-## Setup
-
-```bash
-python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS/Linux
-
-pip install -r requirements.txt
-copy .env.example .env       # Windows
-# cp .env.example .env       # macOS/Linux
+## Quick Setup
+1. Clone the repository
+2. Create a virtual environment and activate it
+3. Install dependencies:
 ```
-
-Generate a secret key and paste it into `.env`:
-```bash
-python -c "import secrets; print(secrets.token_hex(32))"
+   pip install -r requirements.txt
 ```
-
-Leave `MAIL_USERNAME` blank in `.env` for local testing — this triggers a dev-mode fallback that **prints OTP codes to the terminal** instead of requiring real SMTP credentials.
-
-For social sign-in, add your own Google Cloud OAuth and GitHub OAuth App credentials to `.env` (`GOOGLE_CLIENT_ID/SECRET`, `GITHUB_CLIENT_ID/SECRET`) with redirect URIs set to:
+4. Copy `.env.example` to `.env`, then generate and paste your own secret key:
 ```
-http://localhost:8000/api/v1/oauth/google/callback
-http://localhost:8000/api/v1/oauth/github/callback
+   python -c "import secrets; print(secrets.token_hex(32))"
 ```
-
-Run the server:
-```bash
-uvicorn app.main:app --reload
+   (Leave `MAIL_USERNAME` blank — this enables dev mode, where OTP codes print to the terminal instead of needing real email setup.)
+5. Run the server:
 ```
+   uvicorn app.main:app --reload
+```
+6. Open **http://127.0.0.1:8000/docs** in your browser.
 
-Tables are created automatically on startup via `Base.metadata.create_all()`. For production, use Alembic migrations instead:
-```bash
+## Quick Testing (in this order)
+Test each one in Swagger (`/docs`) using "Try it out." Watch your terminal for OTP codes when prompted.
+
+- ✔ **Register** — create a user (`POST /api/v1/auth/register`)
+- ✔ **Verify Email** — copy OTP from terminal → `POST /verify-email`
+- ✔ **Login** — get access + refresh tokens → `POST /login`
+- ✔ **Authorize** — click the padlock icon in Swagger, paste your access token
+- ✔ **/users/me** — confirms protected routes work (`GET /api/v1/users/me`)
+- ✔ **Refresh** — get a new token pair using your refresh token → `POST /refresh`
+- ✔ **Logout** — revoke your refresh token → `POST /logout`
+- ✔ **Forgot Password** → **Reset Password** — full password recovery flow
+- ✔ **OTP Login** — passwordless login via emailed code
+- ✔ *(Optional)* **Google OAuth** / **GitHub OAuth** — visit these directly in a browser tab, not through Swagger (redirects don't work inside Swagger's UI):
+```
+  http://127.0.0.1:8000/api/v1/oauth/google/login
+  http://127.0.0.1:8000/api/v1/oauth/github/login
+```
+  Requires your own Google Cloud / GitHub OAuth App credentials in `.env` — client secrets are never committed to this repo for security.
+
+## Database
+No manual setup needed — tables are created automatically on first run (`Base.metadata.create_all()` in `main.py`). For production, use Alembic:
+```
 alembic init alembic
-# in alembic/env.py: set target_metadata = Base.metadata, import from app.database.database
 alembic revision --autogenerate -m "init"
 alembic upgrade head
 ```
 
-## API Testing
-
-Interactive Swagger docs: **http://127.0.0.1:8000/docs**
-
-> Note: OAuth login/callback endpoints (`/oauth/google/login`, `/oauth/github/login`) involve real browser redirects and should be tested by visiting the URL directly in a browser tab, not via Swagger's "Try it out" button, since Swagger's AJAX calls don't follow cross-origin redirects.
-
-### Example flows (curl)
-
-**Register**
-```bash
-curl -X POST http://127.0.0.1:8000/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"Passw0rd1","full_name":"Test User"}'
-```
-
-**Verify email** (OTP printed in server terminal)
-```bash
-curl -X POST http://127.0.0.1:8000/api/v1/auth/verify-email \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","code":"123456"}'
-```
-
-**Login**
-```bash
-curl -X POST http://127.0.0.1:8000/api/v1/auth/login \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=user@example.com&password=Passw0rd1"
-```
-
-**Access a protected route**
-```bash
-curl http://127.0.0.1:8000/api/v1/users/me \
-  -H "Authorization: Bearer <access_token>"
-```
-
-**Refresh token (rotates old refresh token)**
-```bash
-curl -X POST http://127.0.0.1:8000/api/v1/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{"refresh_token":"<refresh_token>"}'
-```
-
-**Logout (revokes refresh token)**
-```bash
-curl -X POST http://127.0.0.1:8000/api/v1/auth/logout \
-  -H "Authorization: Bearer <access_token>" \
-  -H "Content-Type: application/json" \
-  -d '{"refresh_token":"<refresh_token>"}'
-```
-
-**Forgot / reset password**
-```bash
-curl -X POST http://127.0.0.1:8000/api/v1/auth/forgot-password \
-  -H "Content-Type: application/json" -d '{"email":"user@example.com"}'
-
-curl -X POST http://127.0.0.1:8000/api/v1/auth/reset-password \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","code":"123456","new_password":"NewPass456"}'
-```
-
-**Passwordless OTP login**
-```bash
-curl -X POST http://127.0.0.1:8000/api/v1/auth/otp-login/request \
-  -H "Content-Type: application/json" -d '{"email":"user@example.com"}'
-
-curl -X POST http://127.0.0.1:8000/api/v1/auth/otp-login/verify \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","code":"123456"}'
-```
-
-**Social sign-in** — visit directly in a browser:
-```
-http://127.0.0.1:8000/api/v1/oauth/google/login
-http://127.0.0.1:8000/api/v1/oauth/github/login
-```
-
 ## Security Notes
-- Passwords hashed with bcrypt (via passlib), never stored or logged in plaintext
-- Access tokens are short-lived (15 min); refresh tokens are rotated on every use and tracked in the database so a used/stolen refresh token can be individually revoked
-- Logout revokes the specific refresh token server-side (not just client-side token deletion)
-- All secrets and credentials are loaded from `.env`, never hardcoded
-- CORS is restricted to configured trusted origins via `CORS_ORIGINS`
+- Passwords hashed with bcrypt, never stored in plaintext
+- Access tokens expire in 15 minutes; refresh tokens rotate on every use and are individually revocable (tracked in DB)
+- Logout revokes the specific refresh token server-side, not just client-side
+- All secrets loaded from `.env`, nothing hardcoded
+- CORS restricted to configured trusted origins
 
 ## Testing
-A pytest suite is included in `tests/test_auth.py` covering registration and login-before-verification behavior. (Not yet run in this environment — bonus scope.)
+```
+python -m pytest
+```
+2 automated tests (registration + login-before-verification) — both passing.
 
 ## Bonus Features Status
+- Automated test suite: written and passing (2/2)
 - Rate limiting: not implemented
-- Automated test suite: written, not executed
-- Docker: Dockerfile written, not built/tested
+- Docker: Dockerfile written, not built/tested in this environment
 
 ## Status
-All core and advanced features from the assessment brief are implemented and manually verified end-to-end, including both Google and GitHub OAuth flows against live provider sign-in.
+All core and advanced features from the assessment brief are implemented and manually verified end-to-end, including live Google and GitHub OAuth sign-in.
