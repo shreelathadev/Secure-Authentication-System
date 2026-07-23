@@ -15,7 +15,7 @@ All endpoints were manually tested via Swagger UI (`/docs`) and, for OAuth, dire
 ![Login response](screenshots/login-response-body.png)
 
 ## 5. Full Flow Log (register → verify → login → /me → refresh → logout → forgot/reset password → OTP login)
-![Terminal log of full flow](screenshots/05-uvicorn-log-full-flow.png)
+![Terminal log of full flow](screenshots/uvicorn-log-full-flow.png)
 
 ## 6. Logout — Refresh Token Correctly Revoked
 Proof that a refresh token is rejected after logout (`401 Unauthorized`):
